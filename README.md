@@ -1,7 +1,7 @@
 # downscaleA20
 
 ## createDeltasNorESM.sh
-Script that uses the CDO toolbox to calculate statistics and trends from the NorESM files. Load the module using 
+Script that uses the CDO toolbox (https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. Load the module using 
 ```bash 
 module load CDO/1.9.3-intel-2018a
 ```
