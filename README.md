@@ -1,7 +1,11 @@
 # downscaleA20
 
 ## createDeltasNorESM.sh
-Script that uses the CDO toolbox to calculate statistics and trends from the NorESM files. The starting point is a collection of global NorESM files for longer time-periods (2006-2050). As the script performs the following calculations are created:
+Script that uses the CDO toolbox to calculate statistics and trends from the NorESM files. Load the module using 
+```bash 
+module load CDO/1.9.3-intel-2018a```
+
+The starting point is a collection of global NorESM files for longer time-periods (2006-2050). As the script performs the following calculations are created:
 1. Extract data for period 2006-2015
 2. Calculate the monthly climatology and remove from the time-series to calculate non-seasonal trends
 3. Remove the trend from the original 2006-2015 dataset
