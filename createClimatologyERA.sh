@@ -10,6 +10,8 @@ export outdir="/cluster/projects/nn9412k/A20/DELTA/results/"
 export rundir="/cluster/projects/nn9412k/A20/DELTA/"
 export pattern="*AN.nc"
 
+u10, v10, t2m, msl, tcc
+ 
 # Calculate global monthly, detrended values of atmospheric forcing from NorESM
 for filename in $inputdir$pattern; do
     echo "Working with file:" $filename;
