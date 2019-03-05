@@ -19,3 +19,19 @@ Use this script to interpolate **from** NorESM grid **to** local ROMS grid. This
 ```bash
 conda install -c conda-forge esmpy
 ```
+
+If you dont have Anaconda install follow these suggestions:
+
+```bash
+Create a new environment called OpenDrift:
+
+conda config --add channels conda-forge
+conda create --name OpenDrift python=3.7 basemap matplotlib gdal libnetcdf netCDF4 numpy scipy seaborn xarray
+
+conda activate OpenDrift
+conda install -c conda-forge basemap-data-hires
+conda install -c conda-forge esmpy
+conda install -c conda-forge seawater
+conda install -c conda-forge geos proj4
+conda install -c conda-forge cartopy
+```
