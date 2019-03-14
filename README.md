@@ -1,6 +1,14 @@
 # downscaleA20
 
 # Ocean and biogeochemistry
+The scripts used for this toolbox uses the Climate Data Operator toolbox heavily. Its a fantastic set of functions that enables working with large climate data much easier.
+
+<b>Notes:</b>
+When working here with smaller values of e.g. nitrate and silicate weneeded to ensure we used full precision of the dataset which is neabled with the options:
+```bash 
+cdo -b F64 .....
+```
+
 # Combine two BRY files
 The new version of model2roms (https://github.com/trondkr/model2roms) now produces BCG + PHYSICS into the same BRY file. But prior to that we had two separate BRY files. This script combines those two files into one, based on the new output file used as template. This makes it easy to compare the historical hindcast with the projections and to caclulate climatology and deltas for downscaling: (combineSODAAndBGCFileIntoOne.py)
 
