@@ -1,10 +1,16 @@
 # downscaleA20
 
+# Ocean and biogeochemistry
 # Combine two BRY files
 The new version of model2roms (https://github.com/trondkr/model2roms) now produces BCG + PHYSICS into the same BRY file. But prior to that we had two separate BRY files. This script combines those two files into one, based on the new output file used as template. This makes it easy to compare the historical hindcast with the projections and to caclulate climatology and deltas for downscaling: (combineSODAAndBGCFileIntoOne.py)
 
-## createDeltasNorESM.sh
-Script that uses the CDO toolbox (https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. Load the module using 
+## Step 1: createDeltas-NorESM-ocean.sh
+```bash 
+./createDeltas-NorESM-ocean.sh
+```
+Script that uses the CDO toolbox (https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. The script calculates the detrended climatology and removes this climatology from the timeseries. The result is a file containig the residuals and trends inherent in the timeseries. These residuals are later added to teh hindcast climatology to create a biascorrected timeseries.
+
+Load the module using 
 ```bash 
 module load CDO/1.9.3-intel-2018a
 ```
@@ -17,6 +23,16 @@ The starting point is a collection of global NorESM files for longer time-period
 5. Remove the monthly climatology from the entire dataset (2006-2050)
 6. The result is the deltas from the climatology which will later be added to the higher resolution ERA climatology to create downscaled projections of climate change
 
+## Step 2: createDeltas-SODA-ocean.sh
+```bash 
+./createDeltas-SODA-ocean.sh
+```
+Creates the climatology of the hindcast timeseries. This timeseries is assumed to be reaalistic and in phase with observations. Here, we use the SODA (Simple Ocean Data Assimilation) dataset to create the hindcast using the model2roms toolbox. This toolbox handles SODA3 as input files to create the required hindcast BRY file.
+
+# Step 3: combineClimatologyAndDeltas.py
+This script reads the output from step 1 and 2 and combined the two BRY files. The deltas/residuals from step 1 is added to the climatology created in step 2. A new file, the bias-corrected BRY file, is created.
+
+# Atmosphere
 ## interpolateNORESM_using_ESMF.py
 Use this script to interpolate **from** NorESM grid **to** local ROMS grid. This script uses the fast and efficient interpolation of ESMF and requires the module to be installed to run. Install using Anaconda with command: 
 ```bash
