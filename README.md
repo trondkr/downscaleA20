@@ -1,5 +1,8 @@
 # downscaleA20
 
+# combineSODAAndBCGFileIntoOne.py
+The new version of model2roms (https://github.com/trondkr/model2roms) now produces BCG + PHYSICS into the same BRY file. But prior to that we had two separate BRY files. This script combines those two files into one, based on the new output file used as template. This makes it easy to compare the historical hindcast with the projections and to caclulate climatology and deltas for downscaling.
+
 ## createDeltasNorESM.sh
 Script that uses the CDO toolbox (https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. Load the module using 
 ```bash 
