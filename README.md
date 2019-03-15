@@ -1,4 +1,4 @@
-# Biascorrect NorESM climate data and create ROMS forcing for downscaled projections
+# Bias-correct NorESM climate data to create ROMS forcing for downscaled projections
 
 ## Ocean and biogeochemistry
 The scripts used for this toolbox uses the Climate Data Operator toolbox heavily. Its a fantastic set of functions that enables working with large climate data much easier.
