@@ -70,6 +70,7 @@ conda install -c conda-forge cartopy
     => cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
 
  3. Create the detrended climatology from hindcast timeseries (ERA dataset, https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era-interim):
+
 ```bash createClimatologyERA.sh```
  
  4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
