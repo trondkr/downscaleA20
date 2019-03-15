@@ -83,7 +83,10 @@ conda install -c conda-forge cartopy
  ```
     
 ### Step 3: createClimatologyERA.py
-This script creates de-trended climatology for 2006-2015 of the global AN ERA-INTERIM files. 
+This script creates de-trended climatology for 2006-2015 of the ROMS grid interpolated forcing files created using the global AN ERA-INTERIM files. The atmospheric forcing files for the hindcast has already been created for the grid using the toolbox for atmosphere found in my [romstools](https://github.com/trondkr/romstools/tree/master/create_atmos_ROMS). This script then reads each individual file for each atmospheric variable and calulates the deltas and climatology. The variables used are :
+```bash
+declare -a ERAvars=( cloud lwrad swrad_daymean Pair Qair rain Tair Uwind Vwind )
+```
 
 ### Step 4: createDeltasNorESM-atm.sh
 This script creates the detrended climatology (2006-2015) and removes it from the timeseries (2006-2100) to create residuals/deltas. These deltas will be added to the climatology created in step 1.  
