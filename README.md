@@ -1,4 +1,4 @@
-# downscaleA20
+# Biascorrect NorESM climate data and create ROMS forcing for downscaled projections
 
 ## Ocean and biogeochemistry
 The scripts used for this toolbox uses the Climate Data Operator toolbox heavily. Its a fantastic set of functions that enables working with large climate data much easier.
@@ -62,3 +62,14 @@ conda install -c conda-forge seawater
 conda install -c conda-forge geos proj4
 conda install -c conda-forge cartopy
 ```
+
+#### Prior to running this script you need to do the following.
+
+ 1. Create one file containing all of the atmospheric variables from the NorESM model
+ 2. In our case, CLDTOT came in a separate file which then had to be merged with the other atmospheric variables:
+    => cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
+
+ 3. Create the detrended climatology from hindcast timeseries (ERA dataset):
+    => createClimatologyERA.sh
+ 4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
+    => createDeltasNorESM.sh
