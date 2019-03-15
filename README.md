@@ -10,13 +10,13 @@ cdo -b F64 .....
 ```
 
 ### Combine two BRY files
-The new version of model2roms (https://github.com/trondkr/model2roms) now produces BCG + PHYSICS into the same BRY file. But prior to that we had two separate BRY files. This script combines those two files into one, based on the new output file used as template. This makes it easy to compare the historical hindcast with the projections and to caclulate climatology and deltas for downscaling: (combineSODAAndBGCFileIntoOne.py)
+The new version of [model2roms](https://github.com/trondkr/model2roms) now produces BCG + PHYSICS into the same BRY file. But prior to that we had two separate BRY files. This script combines those two files into one, based on the new output file used as template. This makes it easy to compare the historical hindcast with the projections and to caclulate climatology and deltas for downscaling: (combineSODAAndBGCFileIntoOne.py)
 
 ### Step 1: createDeltas-NorESM-ocean.sh
 ```bash 
 ./createDeltas-NorESM-ocean.sh
 ```
-Script that uses the CDO toolbox (https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. The script calculates the detrended climatology and removes this climatology from the timeseries. The result is a file containig the residuals and trends inherent in the timeseries. These residuals are later added to teh hindcast climatology to create a biascorrected timeseries.
+Script that uses the [CDO toolbox](https://code.mpimet.mpg.de/projects/cdo/) to calculate statistics and trends from the NorESM files. The script calculates the detrended climatology and removes this climatology from the timeseries. The result is a file containig the residuals and trends inherent in the timeseries. These residuals are later added to teh hindcast climatology to create a biascorrected timeseries.
 
 Load the module using 
 ```bash 
@@ -67,13 +67,20 @@ conda install -c conda-forge cartopy
 
  1. Create one file containing all of the atmospheric variables from the NorESM model
  2. In our case, CLDTOT came in a separate file which then had to be merged with the other atmospheric variables:
-    => cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
-
+ ```bash
+ cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
+ ```
+ 
  3. Create the detrended climatology from hindcast timeseries [ERA dataset](https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era-interim):
- ```bash createClimatologyERA.sh```
+ 
+ ```bash 
+ createClimatologyERA.sh
+ ```
  
  4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
- ```bash createDeltasNorESM-atm.sh```
+ ```bash 
+ createDeltasNorESM-atm.sh
+ ```
     
 ### Step 3: createClimatologyERA.py
 This script creates de-trended climatology for 2006-2015 of the global AN ERA-INTERIM files. 
