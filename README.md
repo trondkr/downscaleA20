@@ -69,12 +69,11 @@ conda install -c conda-forge cartopy
  2. In our case, CLDTOT came in a separate file which then had to be merged with the other atmospheric variables:
     => cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
 
- 3. Create the detrended climatology from hindcast timeseries (ERA dataset, https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era-interim):
-
-```bash createClimatologyERA.sh```
+ 3. Create the detrended climatology from hindcast timeseries [ERA dataset](https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era-interim):
+ ```bash createClimatologyERA.sh```
  
  4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
-```bash createDeltasNorESM-atm.sh```
+ ```bash createDeltasNorESM-atm.sh```
     
 ### Step 3: createClimatologyERA.py
 This script creates de-trended climatology for 2006-2015 of the global AN ERA-INTERIM files. 
