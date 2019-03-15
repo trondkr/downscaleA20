@@ -72,4 +72,16 @@ conda install -c conda-forge cartopy
  3. Create the detrended climatology from hindcast timeseries (ERA dataset):
     => createClimatologyERA.sh
  4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
-    => createDeltasNorESM.sh
+    => createDeltasNorESM-atm.sh
+    
+### Step 3: createClimatologyERA.py
+This script creates de-trended climatology for 2006-2015 of the global AN ERA-INTERIM files. 
+
+### Step 4: createDeltasNorESM-atm.sh
+This script creates the detrended climatology (2006-2015) and removes it from the timeseries (2006-2100) to create residuals/deltas. These deltas will be added to the climatology created in step 1.  
+
+Finally, we run the script: 
+```bash
+interpolateNORESM_using_ESMF.py
+```
+This interpolates the ERA climatology and the NorESM deltas to the ROMS grid (A20 in this case). The interpolated deltas are added to the interpolated climatology for each grid point for each timestep. The result is written to a new NetCDF4 file. This result file is the bias-corrected atmospheric forcing file required to run ROMS.
