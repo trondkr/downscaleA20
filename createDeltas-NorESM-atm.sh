@@ -1,18 +1,16 @@
-
 #!/bin/bash
 # Load required CDO module
 module load CDO/1.9.3-intel-2018a
 
 # Trond Kristiansen, 15-18 January 2019, San Francisco
 
-export inputdir="/cluster/projects/nn9412k/A20/FORCING/HINDCAST/"
+export inputdir="/cluster/projects/nn9412k/A20/FORCING/RCP85_atm/"
 export outdir="/cluster/projects/nn9412k/A20/DELTA/results/"
 export rundir="/cluster/projects/nn9412k/A20/DELTA/"
+export pattern="NORESM_ATM.cam2.hmlvl.2006-2100.nc"
 
-declare -a ERAvars=( cloud lwrad swrad_daymean Pair Qair rain Tair Uwind Vwind )
-
-for index in ${!ERAvars[@]}; do
-    export filename=${inputdir}"A20_${ERAvars[$index]}_1980_2014.nc"
+# Calculate global monthly, detrended values of atmospheric forcing from NorESM
+for filename in $inputdir$pattern; do
     echo "Working with file:" $filename;
     
     # Get the filename without path and setup temporary files in work dir
@@ -21,25 +19,32 @@ for index in ${!ERAvars[@]}; do
     export noseasonality=$outdir$"noseasonality.nc"
     export tmpfile3=$outdir$"tmp3.nc"
     export tmpfile4=$outdir$"tmp4.nc"
+
     export detrended=$outdir${basefilename%.nc}"_detrend.nc"
     export detrendedclim=$outdir${basefilename%.nc}"_detrend_monclim.nc"
+    export hindcastdeltas=$outdir${basefilename%.nc}"_2006-2015_deltas.nc"
+    export hindcastdeltasmonthly=$outdir${basefilename%.nc}"_2006-2015_deltas_monthly.nc"
     export monthlymean=$outdir${basefilename%.nc}"_monclim.nc"
 
     # Extract the years of interest
-    cdo --verbose -b F64 selyear,2006/2015 $filename $extractedyears
-        
+    cdo --verbose selyear,2006/2015 $filename $extractedyears
+    
     # Calculate the monthly climatology
     cdo ymonmean $extractedyears $monthlymean
 
     # Remove the seasonality
     cdo ymonsub $extractedyears $monthlymean $noseasonality
-        
+    
     # Remove the linear trend from the timeseries with removed seasonality
     cdo trend $noseasonality $tmpfile3 $tmpfile4
     cdo subtrend $extractedyears $tmpfile3 $tmpfile4 $detrended
 
     # Calculate the monthly mean from the detrended timeseries 2006-2015
     cdo ymonmean $detrended $detrendedclim
+
+    # Calculate the 2006-2015 deltas (used for fractional bias correction)
+    cdo ymonsub $extractedyears $detrendedclim $hindcastdeltas
+    cdo ymonmean $hindcastdeltas $hindcastdeltasmonthly
 
     # Calculate the deltas by subtracting the detrended, 
     # climatology from the full timeseries

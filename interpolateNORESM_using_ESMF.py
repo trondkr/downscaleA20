@@ -25,12 +25,20 @@ __email__    = 'me (at) trondkristiansen.com'
 __created__  = datetime.datetime(2019, 1, 21)
 __modified__ = datetime.datetime(2019, 1, 25)
 __version__  = "1.0"
-__status__   = "Development, 21.1.2019, 25.01.2019"
+__status__   = "Development, 21.1.2019, 25.01.2019, 16.03.2019"
 
-# Prior to running this script you need to run
-# 1. createClimatologyERA.sh
-# 2. createDeltasNorESM.sh
-# the results from these two scripts are stored in the results file and used in this script
+# Prior to running this script you need to do the following.
+#
+# 1. Create one file containing all of the atmospheric variables from the NorESM model
+# 2. In our case, CLDTOT came in a separate file which then had to be merged with the other atmospheric variables:
+#    => cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
+#
+# 3. Create the detrended climatology from hindcast timeseries (ERA dataset):
+#    => createClimatologyERA.sh
+# 4. Create the detrended climatology and remove from teh timeseries to create residuals/deltas:
+#    => createDeltasNorESM.sh
+# 
+# The results from these steps are stored in the results file and used in this script
 #
 # Copy to Fram:
 # scp interpolateNORESM_using_ESMF.py trondk@fram.sigma2.no:/cluster/projects/nn9412k/A20/DELTA/.
@@ -80,6 +88,9 @@ def setupESMF(noresmfile,romsgridfile):
                                                         unmapped_action=ESMF.UnmappedAction.IGNORE)
     return regridSrc2Dst, fieldSrc, fieldDst
 
+def convertToCelsius(val):
+    return val-273.15
+
 print("Starting logfile for ESMF")
 manager = ESMF.Manager(debug=True)
 debug=True
@@ -99,28 +110,21 @@ angle=cdf.variables["angle"][:]
 cdf.close()
  
 # Not that the order in myvardescription and myvars must be mapped
-NORESMvardescriptions=["Fraction cloud cover (0-100?)",
+NORESMvardescriptions=["Fraction cloud cover (0-1)",
 "Downward longwave radiation (W/m2)",
 "Downward shortwave radiation (W/m2)",
 "Atmospheric pressure (Pa)",
 "Specific humidity at 2m (kg/kg)",
 "Total precipitation (kg/m2/s)",
-"Air temperature 2m (degC)",
+"Air temperature 2m (K)",
 "Xi-component of wind (m/s)",
 "Eta-component of wind (m/s)"]
 
-NORESMvars=["clt","rlds","rsds","ps","huss","pr","tas","ua","va"]
+NORESMvars=["CLDTOT","FLDS","FSDS","PS","QREFHT","PRECT","TREFHT","U","V"]
 ROMSvars=["cloud","lwrad","swrad","Pair","Qair","rain","Tair","Uwind","Vwind"]
-ROMSvardescriptions=["Fraction (0-1)","W/m2","W/m2","Pa","kg/kg","degC", "m/s","m/s"]
-
-#NORESMvardescriptions=["Xi-component of wind (m/s)","Eta-component of wind (m/s)"]
-#NORESMvars=["ua","va"]
-#ROMSvars=["Uwind","Vwind"]
-#ROMSvardescriptions=["m/s","m/s"]
-
+ROMSvardescriptions=["Fraction (0-1)","W/m2","W/m2","Pa","kg/kg","kg/m2s" "degC", "m/s","m/s"]
 first=True
-
-# TODO: rotate wind to grid, make sure units are identical for NOREMS and ROMS before adding deltas
+plev=25
 
 for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvars,ROMSvars,NORESMvardescriptions,ROMSvardescriptions):
         
@@ -128,7 +132,11 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
 
     # Make a copy of teh ROMS climatology file to be used as the new output file 
     # after interpolation and adding of deltas
-    src="{}A20_{}_1980_2014_detrend_monclim.nc".format(filebase,ROMSvar)
+    if (ROMSvar=="swrad"):
+        inf="swrad_daymean"
+        src="{}A20_{}_1980_2014_detrend_monclim.nc".format(filebase,inf)
+    else:
+        src="{}A20_{}_1980_2014_detrend_monclim.nc".format(filebase,ROMSvar)
     dst="{}A20_{}_noresm_era_biascorrected_projections.nc".format(finalbase,ROMSvar)
     if os.path.exists(dst): os.remove(dst)
     copyfile(src, dst)
@@ -136,7 +144,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     # Open the climatology ERA file already on ROMS grid. The deltas from NORESM will 
     # be added to these climatological values
     cdf=Dataset(src)
-    
+
     if (ROMSvar=="lwrad" or ROMSvar=="Pair" or ROMSvar=="Uwind" or ROMSvar=="Vwind"): 
         if (ROMSvar=="Pair"):
             time_variable="pair_time"
@@ -145,7 +153,6 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
             time_variable="lwrad_time"
         if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
             time_variable="wind_time"
-            plev=0
     else:
         time_variable="{}_time".format(ROMSvar)
 
@@ -155,14 +162,18 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
 
     # Opening output file to write results to
     cdfout=Dataset(dst,"a")
-    noresmfile="{}{}_Amon_NorESM1-ME_rcp85_r1i1p1_200601-204412_delta.nc".format(filebase,NORESMvar)
+    noresmfile_deltas=filebase+"NORESM_ATM.cam2.hmlvl.2006-2100_delta.nc"
+    noresmfile_mondeltas=filebase+"NORESM_ATM.cam2.hmlvl.2006-2100_2006-2015_deltas_monthly.nc"
 
     if first:
-        regridSrc2Dst, fieldSrc, fieldDst = setupESMF(noresmfile,romsgridfile)
+        regridSrc2Dst, fieldSrc, fieldDst = setupESMF(noresmfile_deltas,romsgridfile)
         first=False
 
     # Opening the original NORESM delta file to be interpolated to ROMS grid
-    cdf=Dataset(noresmfile)
+    cdf=Dataset(noresmfile_deltas)
+    cdf_mondelta=Dataset(noresmfile_mondeltas)
+    montas=cdf_mondelta.variables[NORESMvar][:]
+    
     tas=cdf.variables[NORESMvar][:]
     lat_noresm=cdf.variables["lat"]
     lon_noresm=cdf.variables["lon"]
@@ -170,7 +181,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     timesteps=cdf.variables["time"][:]
     mycalendar = cdf.variables["time"].calendar
     myunits = cdf.variables["time"].units
-    print("== Opended input file: {} containing {} timesteps".format(noresmfile,len(timesteps)))
+    print("== Opended input file: {} containing {} timesteps".format(noresmfile_deltas,len(timesteps)))
 
     # Loop over all time steps, interpolate to ROMS grid and write to file
     if debug:
@@ -178,17 +189,27 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
 
     for t in range(len(timesteps)):
         
+        currentdate = netCDF4.num2date(timesteps[t], myunits, mycalendar)
+        monindex=int(currentdate.month-1)
+
         # The NorESM wind has a fourth component plev which we set to surface level (plev=0)
         if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
             inputdata=np.flipud(np.rot90(np.squeeze(tas[t,plev,:,:])))
         else:
             inputdata=np.flipud(np.rot90(np.squeeze(tas[t,:,:])))
        
+        if ROMSvar=="Tair":
+            inputdata=convertToCelsius(inputdata)
+        
+        if ROMSvar=="rain":
+            inputdata_mondelta=np.flipud(np.rot90(np.squeeze(montas[monindex,:,:])))
+            fieldSrc.data[:,:]=inputdata_mondelta
+            fieldDst = regridSrc2Dst(fieldSrc, fieldDst)
+            outputdata_mondeltas=np.flipud(np.rot90(fieldDst.data))
+
         fieldSrc.data[:,:]=inputdata
         fieldDst = regridSrc2Dst(fieldSrc, fieldDst)
-        currentdate = netCDF4.num2date(timesteps[t], myunits, mycalendar)
-
-        monindex=int(currentdate.month-1)
+        
         monclim=np.squeeze(ROMSclimatology[monindex])
         outputdata=np.flipud(np.rot90(fieldDst.data))
         if (ROMSvar=="ua"):
@@ -198,13 +219,19 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
             scrv=(outputdata*np.cos(angle)) - (outputdata*np.sin(angle))
             outputdata=scrv
 
-        # NorESM is in percent but ROMS needs fractions
-        if (NORESMvar=="clt"):
-            outputdata=np.divide(outputdata,100)
-
-        finaldata=outputdata+monclim
-
-        # Calculate current timestamp using days since 1948
+        if (ROMSvar=="rain"):
+            # Calculate the change as fractional
+            finaldata=(outputdata/outputdata_mondeltas)*monclim
+            finaldata=np.where(finaldata<0,0,finaldata)
+            
+        else:
+            finaldata=outputdata+monclim
+            
+        if (ROMSvar=="cloud"):
+            finaldata=np.where(finaldata<0,0,finaldata)
+            finaldata=np.where(finaldata>1,1,finaldata)
+        
+        #  Calculate current timestamp using days since 1948
         
         JD=netCDF4.date2num(currentdate,"days since 1948-01-01 00:00:00",mycalendar)
         if (t==0 or t==len(timesteps)): print("First timestep {}: {} (julian day {})".format(ROMSvar,currentdate,JD))
@@ -215,7 +242,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
         print("Finished doing interpolation for {} for date {}".format(ROMSvar,currentdate))
         
         if debug:
-            if currentdate.year in yearstoplot:
+            if currentdate.year in yearstoplot and ROMSvar=="rain":
                 # Routines that plots: 1. the original noresm data on the noresm grid, 2. the interpolated data on the A20 grid,
                 # and 3. the final result of summing delta plus climatology on the a20 grid
                 if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
