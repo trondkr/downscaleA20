@@ -1,7 +1,6 @@
 # Bias-correct NorESM climate data: create [ROMS](https://www.myroms.org/) forcing for downscaled projections
 
-<img alt="GitHub" src="https://img.shields.io/github/license/trondkr/downscaleA20.svg">
-
+<img alt="GitHub" src="https://img.shields.io/github/license/trondkr/downscaleA20.svg"><img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/trondkr/downscaleA20.svg">
 ## Ocean and biogeochemistry
 The scripts used for this toolbox uses the Climate Data Operator toolbox heavily. Its a fantastic set of functions that enables working with large climate data much easier.
 
