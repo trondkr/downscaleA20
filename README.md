@@ -93,14 +93,19 @@ This script creates de-trended climatology for 2006-2015 of the ROMS grid interp
 declare -a ERAvars=( cloud lwrad swrad_daymean Pair Qair rain Tair Uwind Vwind )
 ```
 
-For xCO2 we created a separate script for this specific variblae as the input and output file differed from the ERA files:
-```bash
-a20_xCO2atm_1979_2015.nc
-bash
+The CO2 variable was provided in a separate file so a duplicate script for this variable was used:  ```createClimatologyERA-xCO2.sh```
 
 ### Step 4: createDeltasNorESM-atm.sh
 This script creates the detrended climatology (2006-2015) and removes it from the timeseries (2006-2100) to create residuals/deltas. These deltas will be added to the climatology created in step 1.  
-
+ ```bash 
+ createDeltasNorESM-atm.sh
+ ```
+The script is run twice changing the input file to  cover both standard atmospheric variables and CO2:
+```bash 
+export pattern="NORESM_ATM.cam2.hmlvl.2006-2100.nc"
+export pattern="CO2.cam2.hmlvl.2006-2100.nc"
+``` 
+ 
 Finally, we run the script: 
 ```bash
 interpolateNORESM_using_ESMF.py
