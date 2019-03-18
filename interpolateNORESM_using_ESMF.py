@@ -110,7 +110,7 @@ angle=cdf.variables["angle"][:]
 cdf.close()
  
 # Not that the order in myvardescription and myvars must be mapped
-NORESMvardescriptions=["Fraction cloud cover (0-1)",
+NORESMvardescriptions=["ppm","Fraction cloud cover (0-1)",
 "Downward longwave radiation (W/m2)",
 "Downward shortwave radiation (W/m2)",
 "Atmospheric pressure (Pa)",
@@ -120,9 +120,14 @@ NORESMvardescriptions=["Fraction cloud cover (0-1)",
 "Xi-component of wind (m/s)",
 "Eta-component of wind (m/s)"]
 
-NORESMvars=["CLDTOT","FLDS","FSDS","PS","QREFHT","PRECT","TREFHT","U","V"]
-ROMSvars=["cloud","lwrad","swrad","Pair","Qair","rain","Tair","Uwind","Vwind"]
-ROMSvardescriptions=["Fraction (0-1)","W/m2","W/m2","Pa","kg/kg","kg/m2s" "degC", "m/s","m/s"]
+NORESMvars=["CO2","CLDTOT","FLDS","FSDS","PS","QREFHT","PRECT","TREFHT","U","V"]
+ROMSvars=["xCO2atm","cloud","lwrad","swrad","Pair","Qair","rain","Tair","Uwind","Vwind"]
+ROMSvardescriptions=["ppm","Fraction (0-1)","W/m2","W/m2","Pa","kg/kg","kg/m2s" "degC", "m/s","m/s"]
+
+NORESMvars=["CO2"]
+ROMSvars=["xCO2atm"]
+ROMSvardescriptions=["ppm"]
+
 first=True
 plev=25
 
@@ -135,6 +140,8 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     if (ROMSvar=="swrad"):
         inf="swrad_daymean"
         src="{}A20_{}_1980_2014_detrend_monclim.nc".format(filebase,inf)
+    elif (ROMSvar=="xCO2atm"):
+        src="{}A20_{}_1979_2015_detrend_monclim.nc".format(filebase,ROMSvar)
     else:
         src="{}A20_{}_1980_2014_detrend_monclim.nc".format(filebase,ROMSvar)
     dst="{}A20_{}_noresm_era_biascorrected_projections.nc".format(finalbase,ROMSvar)
@@ -145,7 +152,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     # be added to these climatological values
     cdf=Dataset(src)
 
-    if (ROMSvar=="lwrad" or ROMSvar=="Pair" or ROMSvar=="Uwind" or ROMSvar=="Vwind"): 
+    if (ROMSvar=="lwrad" or ROMSvar=="Pair" or ROMSvar=="Uwind" or ROMSvar=="Vwind" or ROMSvar=="xCO2atm"): 
         if (ROMSvar=="Pair"):
             time_variable="pair_time"
         if (ROMSvar=="lwrad"):
@@ -153,6 +160,9 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
             time_variable="lwrad_time"
         if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
             time_variable="wind_time"
+        if (ROMSvar=="xCO2atm"):
+            time_variable="xCO2atm_time"
+            plev=0
     else:
         time_variable="{}_time".format(ROMSvar)
 
@@ -165,6 +175,9 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     noresmfile_deltas=filebase+"NORESM_ATM.cam2.hmlvl.2006-2100_delta.nc"
     noresmfile_mondeltas=filebase+"NORESM_ATM.cam2.hmlvl.2006-2100_2006-2015_deltas_monthly.nc"
 
+    if (ROMSvar=="xCO2atm"):
+        noresmfile_deltas=filebase+"CO2.cam2.hmlvl.2006-2100_delta.nc"
+        noresmfile_mondeltas=filebase+"CO2.cam2.hmlvl.2006-2100_2006-2015_deltas_monthly.nc"
     if first:
         regridSrc2Dst, fieldSrc, fieldDst = setupESMF(noresmfile_deltas,romsgridfile)
         first=False
@@ -173,7 +186,11 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
     cdf=Dataset(noresmfile_deltas)
     cdf_mondelta=Dataset(noresmfile_mondeltas)
     montas=cdf_mondelta.variables[NORESMvar][:]
-    
+    if ROMSvar=="xCO2atm":
+        # Convert from [kg/kg] to [ppm (dry air)] (NorESM to ROMS)
+        fact=1e6*29./(12.+2.*16.)
+        montas=montas*fact
+
     tas=cdf.variables[NORESMvar][:]
     lat_noresm=cdf.variables["lat"]
     lon_noresm=cdf.variables["lon"]
@@ -193,7 +210,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
         monindex=int(currentdate.month-1)
 
         # The NorESM wind has a fourth component plev which we set to surface level (plev=0)
-        if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
+        if (ROMSvar=="Uwind" or ROMSvar=="Vwind" or ROMSvar=="xCO2atm"):
             inputdata=np.flipud(np.rot90(np.squeeze(tas[t,plev,:,:])))
         else:
             inputdata=np.flipud(np.rot90(np.squeeze(tas[t,:,:])))
@@ -201,17 +218,31 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
         if ROMSvar=="Tair":
             inputdata=convertToCelsius(inputdata)
         
+        # Variables that we use the fractional approach on - need monthly hindcast residuals
         if ROMSvar=="rain":
             inputdata_mondelta=np.flipud(np.rot90(np.squeeze(montas[monindex,:,:])))
             fieldSrc.data[:,:]=inputdata_mondelta
-            fieldDst = regridSrc2Dst(fieldSrc, fieldDst)
-            outputdata_mondeltas=np.flipud(np.rot90(fieldDst.data))
+            fieldDstRes = regridSrc2Dst(fieldSrc, fieldDst)
+            outputdata_mondeltas=np.flipud(np.rot90(fieldDstRes.data))
 
-        fieldSrc.data[:,:]=inputdata
-        fieldDst = regridSrc2Dst(fieldSrc, fieldDst)
+        if ROMSvar=="xCO2atm":
+            inputdata_mondelta=np.flipud(np.rot90(np.squeeze(montas[monindex,plev,:,:])))
         
+            fieldSrc.data[:,:]=inputdata_mondelta
+            fieldDstRes = regridSrc2Dst(fieldSrc, fieldDst)
+            outputdata_mondeltas=np.flipud(np.rot90(fieldDstRes.data))
+    
+        if ROMSvar=="xCO2atm":
+            # Convert from [kg/kg] to [ppm (dry air)] (NorESM to ROMS)
+            fact=1e6*29./(12.+2.*16.)
+            inputdata=inputdata*fact
+        fieldSrc.data[:,:]=inputdata
+       
+        fieldDstRes = regridSrc2Dst(fieldSrc, fieldDst)
+      
         monclim=np.squeeze(ROMSclimatology[monindex])
-        outputdata=np.flipud(np.rot90(fieldDst.data))
+        outputdata=np.flipud(np.rot90(fieldDstRes.data))
+       
         if (ROMSvar=="ua"):
             scru=(outputdata*np.cos(angle)) + (outputdata*np.sin(angle))
             outputdata=scru
@@ -219,11 +250,12 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
             scrv=(outputdata*np.cos(angle)) - (outputdata*np.sin(angle))
             outputdata=scrv
 
-        if (ROMSvar=="rain"):
-            # Calculate the change as fractional
-            finaldata=(outputdata/outputdata_mondeltas)*monclim
+        if (ROMSvar=="rain" or ROMSvar=="xCO2atm"):
+        
+            finaldata=outputdata+monclim
             finaldata=np.where(finaldata<0,0,finaldata)
-            
+            #print("final co2", np.min(finaldata),np.max(finaldata))
+
         else:
             finaldata=outputdata+monclim
             
@@ -242,7 +274,7 @@ for NORESMvar, ROMSvar, NORESMvardescription,ROMSvardescription in zip(NORESMvar
         print("Finished doing interpolation for {} for date {}".format(ROMSvar,currentdate))
         
         if debug:
-            if currentdate.year in yearstoplot and ROMSvar=="rain":
+            if currentdate.year in yearstoplot and ROMSvar=="xCO2am":
                 # Routines that plots: 1. the original noresm data on the noresm grid, 2. the interpolated data on the A20 grid,
                 # and 3. the final result of summing delta plus climatology on the a20 grid
                 if (ROMSvar=="Uwind" or ROMSvar=="Vwind"):
