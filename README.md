@@ -66,7 +66,11 @@ conda install -c conda-forge cartopy
 
 #### Prior to running this script you need to do the following.
 
- 1. Create one file containing all of the atmospheric variables from the NorESM model
+ 1. Create one file containing all of the atmospheric variables from the NorESM model. Duplicate timesteps are ignored.
+  ```bash 
+export SKIP_SAME_TIME=1
+cdo mergetime CO2.cam2.hmlvl.2* CO2.cam2.hmlvl.2006-2100.nc
+ ```
  2. In our case, CLDTOT came in a separate file which then had to be merged with the other atmospheric variables:
  ```bash
  cdo merge CLDTOT.cam2.hmlvl.2006-2100.nc atm.cam2.hmlvl.2006-2100.nc NORESM_ATM.cam2.hmlvl.2006-2100.nc
@@ -88,6 +92,11 @@ This script creates de-trended climatology for 2006-2015 of the ROMS grid interp
 ```bash
 declare -a ERAvars=( cloud lwrad swrad_daymean Pair Qair rain Tair Uwind Vwind )
 ```
+
+For xCO2 we created a separate script for this specific variblae as the input and output file differed from the ERA files:
+```bash
+a20_xCO2atm_1979_2015.nc
+bash
 
 ### Step 4: createDeltasNorESM-atm.sh
 This script creates the detrended climatology (2006-2015) and removes it from the timeseries (2006-2100) to create residuals/deltas. These deltas will be added to the climatology created in step 1.  
