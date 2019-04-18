@@ -64,7 +64,7 @@ conda install -c conda-forge geos proj4
 conda install -c conda-forge cartopy
 ```
 
-The `interpolateNORESM_using_ESMF.py` script should be run on a queue as it requires large memory (bigmem):
+The `interpolateNORESM_using_ESMF.py` script should be run on a queue as it requires large memory ([bigmem](https://documentation.sigma2.no/jobs/jobtypes.html)):
 
 ```bash
 #!/bin/bash
